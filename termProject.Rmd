@@ -1,0 +1,62 @@
+---
+title: "Marketing Analytics Term Project"
+author: "Batur Usta, Efehan Danýþman"
+date: "5 Mayýs 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("C:/Users/08892/Desktop/Marketing Analytics")     #Change this accordingly.
+```
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(RColorBrewer)
+```
+
+```{r import}
+# Import data from three cities
+barcelona<-read.csv("listings_barcelona.csv")
+istanbul<-read.csv("listings_istanbul.csv")
+capetown<-read.csv("listings_capetown.csv")
+```
+
+
+```{r merge}
+# Merge cities into one dataframe
+barcelona$city <- "barcelona"
+istanbul$city <- "istanbul"
+capetown$city <- "capetown"
+data <- rbind(barcelona, istanbul, capetown)
+```
+
+```{r clean}
+# Drop columns
+df <- data %>%
+  select(city, latitude, longitude, room_type, price, minimum_nights, number_of_reviews, reviews_per_month, calculated_host_listings_count, availability_365)
+# Replace NA's in reviews per month column with zeros
+df$reviews_per_month <- df$reviews_per_month %>%
+  replace_na(., 0)
+
+# currency conversions
+#TL/Euro period average= 0.160
+#ZAR/Euro period average= 0.063
+df <- df %>%
+  mutate(price=ifelse(city=="istanbul", price*0.160, ifelse(city=="capetown", price*0.063, price)))
+```
+
+```{r explore}
+df %>%
+  select(city, room_type, price) %>%
+  group_by(city, room_type) %>%
+  summarize(price=mean(price)) %>%
+  ggplot(.)+
+  geom_bar(aes(x=city, y=price, fill=room_type), stat="identity", position="dodge") +
+  theme_bw()+
+  scale_fill_brewer(palette="PuBuGn")+
+  labs(x="City", y="Price (€)", title="Room Price per City")+
+  theme(legend.position = c(0.84,0.82), legend.title=element_text("Room Type"))
+```
+
